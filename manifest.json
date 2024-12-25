@@ -1,0 +1,36 @@
+{
+  "name": "YMCABot",
+  "description": "This extension will automatically book classes at the YMCA as soon as they become available.",
+  "version": "0.0.0.7",
+  "icons": {
+    "16": "assets/icon-16.png",
+    "48": "assets/icon-48.png",
+    "128": "assets/icon-128.png"
+  },
+  "permissions": [
+    "activeTab",
+    "storage",
+    "tabs",
+    "*://*/*"
+  ],
+  "browser_action": {
+    "default_title": "YMCABot",
+    "default_icon": "assets/icon-128.png",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [ "https://coney-island-ymca.virtuagym.com/classes*" ],
+      "js": [
+        "jquery.min.js",
+        "content.js"
+      ],
+      "css": [
+        "styles.css"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [ "assets/mask.png"],
+  "manifest_version": 2
+}
