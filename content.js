@@ -2,137 +2,77 @@
 
 var refreshTimer;
 
-(function(){
+(function() {
 
+	// Extract class date and time from the HTML
+	function getClassDetails() {
+		const classDateElement = document.querySelector('#class_details .title_item + .value');
+		const classTimeElement = classDateElement.nextElementSibling;
 
-	/*
-	chrome.storage.sync.get(['blurOnDefault', 'blurAmount'], function(values){
-		window.imageBlurOpacityAmount = values.blurAmount || 6;
-	}); */
+		// Get the class date and time from the elements
+		const classDateString = classDateElement.textContent.trim(); // Friday December 27
+		const classTimeString = classTimeElement.textContent.trim(); // 03:05 pm - 03:50 pm
 
+		return { classDateString, classTimeString };
+	}
+
+	// Convert the class date and time into Date objects
+	function getClassDateTime() {
+		const { classDateString, classTimeString } = getClassDetails();
+
+		// Parse the class date and time into Date objects
+		const classDate = new Date(`${classDateString}, 2024 ${classTimeString.split(" ")[0]}`);
+		const classTimeParts = classTimeString.split(" - ");
+		const classStartTime = new Date(`${classDateString}, 2024 ${classTimeParts[0]}`);
+
+		return { classDate, classStartTime };
+	}
+
+	// Check if the booking is within the allowed 48-hour window
+	function isBookingAllowed() {
+		const { classStartTime } = getClassDateTime();
+		const now = new Date();
+		const twoDaysAhead = new Date(classStartTime.getTime() - (48 * 60 * 60 * 1000) - (5 * 1000));
+
+		return now >= twoDaysAhead; // plus 5 minutes
+	}
+
+	// Refresh logic and booking checking integration
 	function beginRefresh() {
-
-		if($('#book_btn').length == 1) {
-			//alert('item in stock');
-			// stop refresh
-
-			// should we click through? this should be the last time
-			if(window.addToBasketEnabled) {
+		// Only refresh if the booking button is not found
+		if ($('#book_btn').length === 1) {
+			// Stop the refresh cycle if booking button is found
+			if (window.addToBasketEnabled) {
 				$('#book_btn').click();
 			}
-		} else if($('span:contains("Cancel booking")').length == 1) { 
-			// we already have the booking, so stop
+		} else if ($('span:contains("Cancel booking")').length === 1) {
+			// Stop refreshing if booking already exists
 			console.log('You already have a booking!');
 			clearInterval(refreshTimer);
 		} else {
-			//alert('Going to refresh the page');
-			
-			
-			clearInterval(refreshTimer);
-			refreshTimer = setInterval(function() {
-				/*
-				chrome.tabs.executeScript(tab.id, {
-					code: "location.reload()"
-				}); */
-
-				location.reload();
-			}, window.refreshAmount * 1000);
-		}
-	}
-
-	/*
-	function blur(image) {
-		if (image.id != window.cloneImageId) {
-		  image.style.filter = `blur(${window.imageBlurOpacityAmount}px) opacity(1)`;
-	  }
-	}
-
-	function show(image) {
-		if (image.id != window.cloneImageId) {
-		  image.style.filter = "opacity(1)";
-	  }
-	}
-
-	function blurAll() {
-		const images = document.querySelectorAll('img');
-		for (const image of images) {
-			  blur(image);
-	  }
-	  window.imageBlurState = "blurred";
-	}
-
-	function revealAll() {
-		const images = document.querySelectorAll('img');
-		for (const image of images) {
-	    	show(image);
-	  }
-	  window.imageBlurState = "revealed";
-	} 
-
-	function reveal(e) {
-		if (window.imageBlurState === "blurred") {
-		    if (e.shiftKey && e.altKey) {
-				e.preventDefault();
-				e.stopPropagation();
-		        show(e.target);
-
-				} else if (e.altKey) {
-					e.preventDefault();
-					e.stopPropagation();
-					revealSome(e);
+			// Check if it's within the 48-hour window to book
+			if (isBookingAllowed()) {
+				// Stop refreshing and attempt to book
+				if (window.addToBasketEnabled) {
+					$('#book_btn').click();
 				}
-		}
-	}
-
-	function unreveal(e) {
-		if (window.imageBlurState === "blurred") {
-			blur(e.target);
-		}
-	}
-
-	function initialBlurAll() {
-		const images = document.querySelectorAll('img');
-		for (const image of images) {
-			if (image.dataset.imageBlurOnLoadUpdateOccured != "true"
-		     && image.id != window.cloneImageId) {
-				blur(image);
-				image.addEventListener('click', reveal);
-				image.addEventListener('mouseout', unreveal);
-				image.dataset.imageBlurOnLoadUpdateOccured = true;
-			}
-	  	}
-	  	window.imageBlurState = "blurred";
-	}
-
-	function removeBGImages() {
-		const everything = document.querySelectorAll("*");
-		for (item of everything) {
-			if (item.style && image.id != window.cloneImageId) {
-				item.style.backgroundImage = "none";
+			} else {
+				// Only refresh if it's not yet time to book
+				console.log("It's too early to book. Refreshing in 1 minute...");
+				clearInterval(refreshTimer);
+				refreshTimer = setInterval(function() {
+					// Reload page periodically if it's necessary (time-based refresh)
+					if (window.refreshEnabled) {
+						location.reload();
+					}
+				}, 60000); // wait 1 minute
 			}
 		}
 	}
-
-	function initialLoadRevealAll() {
-		const images = document.querySelectorAll('img');
-		for (const image of images) {
-			if (image.dataset.imageBlurOnLoadUpdateOccured != "true"
-		      && image.id != window.cloneImageId) {
-	    		show(image);
-	    		image.addEventListener('click', reveal);
-				image.addEventListener('mouseout', unreveal);
-	    		image.dataset.imageBlurOnLoadUpdateOccured = true;
-	    	}
-	  	}
-	  	window.imageBlurState = "revealed";
-	}
- */
 
 	function onPageLoad(e) {
-		chrome.storage.sync.get(['refreshEnabled', 'refreshAmount', 'smsEnabled', 'smsNumber', 'addToBasketEnabled'], function(values){
-			// TODO: handle what to do if page is refresh enabled at the start
-
-			// Save values to the window
+		chrome.storage.sync.get(['refreshEnabled', 'refreshAmount', 'smsEnabled', 'smsNumber', 'addToBasketEnabled'], function(values) {
+			// Store values to the window object for easy access
 			window.refreshEnabled = values.refreshEnabled;
 			window.refreshAmount = values.refreshAmount;
 			window.smsEnabled = values.smsEnabled;
@@ -141,138 +81,49 @@ var refreshTimer;
 
 			var url = window.location.href;
 
-			// checks refresh and checks we're at a load_event page
-			if(window.refreshEnabled && url.indexOf('?' + 'load_event_id' + '=') != -1) {
+			// Start refreshing if necessary and on the correct page
+			if (window.refreshEnabled && url.indexOf('?' + 'load_event_id' + '=') !== -1) {
 				beginRefresh();
-			}
-			// update the classes to be clickable
-			else {
+			} else {
+				// Update clickable classes only once
 				$('.class:not(.class_available)').each(function(i, obj) {
 					var classId = $(this).attr('id');
-					$(this).attr("onclick","window.open('https://coney-island-ymca.virtuagym.com/classes?load_event_id=" + classId + "', '_blank');");
+					$(this).attr("onclick", "window.open('https://coney-island-ymca.virtuagym.com/classes?load_event_id=" + classId + "', '_blank');");
 				});
 			}
-			
-			
-
-
-			/*
-			if (values.blurOnDefault) {
-				initialBlurAll();
-			} else {
-				initialLoadRevealAll();
-			}
-			window.imageBlurOpacityAmount = values.blurAmount || 6; */
 		});
-
-		
 	}
-
-	function onDomLoad(e) {
-		
-
-		
-	}
-
-	/*
-	function repositionMask(e) {
-		const img = e.target;
-    const ir = img.getBoundingClientRect();
-		 img.style["webkitMaskPosition"] = (e.clientX - ir.left) + "px " +
-		   (e.clientY - ir.top) + "px";
-	}
-
-	function revealSome(e) {
-		const img = e.target;
-		const div = document.getElementById(window.maskDivId);
-		window.cloneImageId = "imageBlur-copy";
-		const masked = document.getElementById(window.cloneImageId);
-		if (masked) {
-			masked.remove();
-		}
-		const ir = img.getBoundingClientRect();
-		div.style.left =   (ir.left + window.pageXOffset) + "px";
-		div.style.top = 	(ir.top + window.pageYOffset) + "px";
-		div.style.display = "inline-block";
-		div.style["zIndex"] = "100";
-
-		const clone = img.cloneNode(true);
-    clone.id = window.cloneImageId; // avoid duplicate id in clone
-		clone.style.cursor = "crosshair";
-		clone.style.webkitMaskRepeat = "no-repeat";
-		const maskUrl = chrome.extension.getURL("assets/mask.png")
-		clone.style.webkitMaskImage = "url('" + maskUrl + "')";
-		clone.style.filter = "none";
-		clone.addEventListener("mousemove", repositionMask);
-		clone.addEventListener("click", stopRevealingSome);
-		div.appendChild(clone);
-		repositionMask(e);
-	}
-
-	function stopRevealingSome(img) {
-		const div = document.getElementById(window.maskDivId);
-		div.style.display = "none";
-		if (img.id == window.cloneImageId) {
-			img.style.display = "none";
-		  img.remove();
-	  }
-	}
-
-	function addMaskDivToPage(){
-		window.maskDivId = "imageBlur-mask-div";
-		const maskDiv = document.createElement("div");
-		maskDiv.style = "position:absolute;";
-		maskDiv.id = window.maskDivId;
-		document.body.appendChild(maskDiv);
-	} */
 
 	document.addEventListener('DOMContentLoaded', function(e) {
-		//addMaskDivToPage();
 		onPageLoad(e);
-		onDomLoad(e);
-		
+
+		// Observe changes to only relevant parts of the page
 		const targetNode = $('body')[0];
 		const config = { attributes: false, childList: true, subtree: false };
 
-		// Create an observer instance linked to the callback function
+		// Create an observer instance and observe only when necessary
 		const observer = new MutationObserver(onPageLoad);
 		observer.observe(targetNode, config);
-
-
-
-		//document.addEventListener('DOMNodeInserted', onPageLoad);
 	});
 
-	function getElementByXpath(path) {
-		return document.evaluate(path, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
-	  }
-
+	// Function to manage the storage changes efficiently
 	chrome.storage.onChanged.addListener(function(changes, namespace) {
-		for (key in changes) {
-			/* if (key === "blurAmount") {
-				window.imageBlurOpacityAmount = changes[key].newValue;
-			} */
-
-			if (key === "smsEnabled") { 
+		for (let key in changes) {
+			if (key === "smsEnabled") {
 				window.smsEnabled = changes[key].newValue;
 			}
-
 			if (key === "smsNumber") {
 				window.smsNumber = changes[key].newValue;
 			}
-
 			if (key === "addToBasketEnabled") {
 				window.addToBasketEnabled = changes[key].newValue;
 			}
-
 			if (key === "refreshAmount") {
 				window.refreshAmount = changes[key].newValue;
-				
 			}
 			if (key === "refreshEnabled") {
-				window.refreshEnabled = changes[key].newValue; 
-
-				if(window.refreshEnabled) {
+				window.refreshEnabled = changes[key].newValue;
+				if (window.refreshEnabled) {
 					beginRefresh();
 				}
 			}
@@ -284,11 +135,10 @@ var refreshTimer;
 			if (request) {
 				switch (request.status) {
 					case 'refreshEnabled':
-						// TODO we don't really need this if we can detect config changes
-						//beginRefresh();
+						// Handle status update if needed
 						break;
 				}
 			}
 		}
 	);
-})()
+})();
