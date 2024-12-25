@@ -1,0 +1,2 @@
+# ymcabot
+YMCA checking bot
