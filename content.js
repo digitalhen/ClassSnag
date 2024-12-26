@@ -7,7 +7,9 @@ var refreshTimer;
 	// Extract class date and time from the HTML
 	function getClassDetails() {
 		const classDateElement = document.querySelector('#class_details .title_item + .value');
-		const classTimeElement = classDateElement.nextElementSibling;
+		const classTimeElement = document.querySelector("#class_details tr:nth-child(2) .value");
+
+		//*[@id="class_details"]/table/tbody/tr[2]/td[2]
 
 		// Get the class date and time from the elements
 		const classDateString = classDateElement.textContent.trim(); // Friday December 27
@@ -32,7 +34,9 @@ var refreshTimer;
 	function isBookingAllowed() {
 		const { classStartTime } = getClassDateTime();
 		const now = new Date();
-		const twoDaysAhead = new Date(classStartTime.getTime() - (48 * 60 * 60 * 1000) - (5 * 1000));
+		const twoDaysAhead = new Date(classStartTime.getTime() - (48 * 60 * 60 * 1000) - (300 * 1000));
+
+		console.log(now >= twoDaysAhead);
 
 		return now >= twoDaysAhead; // plus 5 minutes
 	}
@@ -50,14 +54,20 @@ var refreshTimer;
 			console.log('You already have a booking!');
 			clearInterval(refreshTimer);
 		} else {
-			// Check if it's within the 48-hour window to book
+			// Eligible to book, but not available
 			if (isBookingAllowed()) {
 				// Stop refreshing and attempt to book
-				if (window.addToBasketEnabled) {
-					$('#book_btn').click();
-				}
+				console.log("No spots available. Refreshing in specified interval");
+				clearInterval(refreshTimer);
+				refreshTimer = setInterval(function() {
+					// Reload page periodically if it's necessary (time-based refresh)
+					if (window.refreshEnabled) {
+						location.reload();
+					}
+				}, window.refreshAmount * 1000); // wait 1 minute
+				
 			} else {
-				// Only refresh if it's not yet time to book
+				// Too early for the session so refreshing in 1 minute
 				console.log("It's too early to book. Refreshing in 1 minute...");
 				clearInterval(refreshTimer);
 				refreshTimer = setInterval(function() {
