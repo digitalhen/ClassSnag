@@ -2,153 +2,123 @@
 
 var refreshTimer;
 
-(function() {
+(function () {
 
-	// Extract class date and time from the HTML
-	function getClassDetails() {
-		const classDateElement = document.querySelector('#class_details .title_item + .value');
-		const classTimeElement = document.querySelector("#class_details tr:nth-child(2) .value");
+    function beginRefresh() {
+        if ($('#book_btn').length === 1) {
+            if (window.addToBasketEnabled) {
+                clearInterval(refreshTimer);
+                $('#book_btn').click();
+            }
+        } else if ($('span:contains("Cancel booking")').length === 1) {
+            console.log('You already have a booking!');
+            clearInterval(refreshTimer);
+        } else {
+            console.log("inside else");
+            console.log("first button text " + $('.event-actions button:first .text').text());
 
-		//*[@id="class_details"]/table/tbody/tr[2]/td[2]
+            if ($("span:contains('Fully booked')").length) {
+                console.log('inside fully booked');
+                clearInterval(refreshTimer);
+                refreshTimer = setInterval(function () {
+                    if (window.refreshEnabled) {
+                        location.reload();
+                    }
+                }, window.refreshAmount * 1000);
+            } else if ($("span:contains('Too early to book')").length) {
+                console.log('inside too early to book');
+                clearInterval(refreshTimer);
+                refreshTimer = setInterval(function () {
+                    if (window.refreshEnabled) {
+                        location.reload();
+                    }
+                }, window.refreshAmount * 1000);
+            } else if ($("span:contains('Too late to book')").length) {
+                console.log('too late to book');
+                clearInterval(refreshTimer);
+            }
+        }
+    }
 
-		// Get the class date and time from the elements
-		const classDateString = classDateElement.textContent.trim(); // Friday December 27
-		const classTimeString = classTimeElement.textContent.trim(); // 03:05 pm - 03:50 pm
+    function onPageLoad(e) {
+        chrome.storage.sync.get(['refreshEnabled', 'refreshAmount', 'smsEnabled', 'smsNumber', 'addToBasketEnabled'], function (values) {
+            window.refreshEnabled = values.refreshEnabled;
+            window.refreshAmount = values.refreshAmount;
+            window.smsEnabled = values.smsEnabled;
+            window.smsNumber = values.smsNumber;
+            window.addToBasketEnabled = values.addToBasketEnabled;
 
-		return { classDateString, classTimeString };
-	}
+            var url = window.location.href;
 
-	// Convert the class date and time into Date objects
-	function getClassDateTime() {
-		const { classDateString, classTimeString } = getClassDetails();
+            if (window.refreshEnabled && url.indexOf('?load_event_id=') !== -1) {
+                waitForButtonsThenRefresh();
+            } else {
+                $('.class:not(.class_available)').each(function (i, obj) {
+                    var classId = $(this).attr('id');
+                    $(this).attr("onclick", "window.open('https://coney-island-ymca.virtuagym.com/classes?load_event_id=" + classId + "', '_blank');");
+                });
+            }
+        });
+    }
 
-		// Parse the class date and time into Date objects
-		const classDate = new Date(`${classDateString}, 2024 ${classTimeString.split(" ")[0]}`);
-		const classTimeParts = classTimeString.split(" - ");
-		const classStartTime = new Date(`${classDateString}, 2024 ${classTimeParts[0]}`);
+    function waitForButtonsThenRefresh() {
+        const fallback = setInterval(() => {
+            if ($('.event-actions button').length) {
+                clearInterval(fallback);
+                console.log("Fallback: Buttons loaded.");
+                beginRefresh();
+            }
+        }, 1000);
 
-		return { classDate, classStartTime };
-	}
+        const targetNode = document.querySelector('.event-actions');
+        if (targetNode) {
+            const observer = new MutationObserver((mutationsList, observer) => {
+                for (let mutation of mutationsList) {
+                    if ($(mutation.target).find('button').length) {
+                        console.log("Observer: Buttons loaded.");
+                        clearInterval(fallback);
+                        observer.disconnect();
+                        beginRefresh();
+                        break;
+                    }
+                }
+            });
 
-	// Check if the booking is within the allowed 48-hour window
-	function isBookingAllowed() {
-		const { classStartTime } = getClassDateTime();
-		const now = new Date();
-		const twoDaysAhead = new Date(classStartTime.getTime() - (48 * 60 * 60 * 1000) - (300 * 1000));
+            observer.observe(targetNode, { childList: true, subtree: true });
+        }
+    }
 
-		console.log(now >= twoDaysAhead);
+    document.addEventListener('DOMContentLoaded', function (e) {
+        onPageLoad(e);
+    });
 
-		return now >= twoDaysAhead; // plus 5 minutes
-	}
+    chrome.storage.onChanged.addListener(function (changes, namespace) {
+        for (let key in changes) {
+            if (key === "smsEnabled") {
+                window.smsEnabled = changes[key].newValue;
+            }
+            if (key === "smsNumber") {
+                window.smsNumber = changes[key].newValue;
+            }
+            if (key === "addToBasketEnabled") {
+                window.addToBasketEnabled = changes[key].newValue;
+            }
+            if (key === "refreshAmount") {
+                window.refreshAmount = changes[key].newValue;
+            }
+            if (key === "refreshEnabled") {
+                window.refreshEnabled = changes[key].newValue;
+                if (window.refreshEnabled) {
+                    waitForButtonsThenRefresh();
+                }
+            }
+        }
+    });
 
-	// Refresh logic and booking checking integration
-	function beginRefresh() {
-		// Only refresh if the booking button is not found
-		if ($('#book_btn').length === 1) {
-			// Stop the refresh cycle if booking button is found
-			if (window.addToBasketEnabled) {
-				$('#book_btn').click();
-			}
-		} else if ($('span:contains("Cancel booking")').length === 1) {
-			// Stop refreshing if booking already exists
-			console.log('You already have a booking!');
-			clearInterval(refreshTimer);
-		} else {
-			// Eligible to book, but not available
-			if (isBookingAllowed()) {
-				// Stop refreshing and attempt to book
-				console.log("No spots available. Refreshing in specified interval");
-				clearInterval(refreshTimer);
-				refreshTimer = setInterval(function() {
-					// Reload page periodically if it's necessary (time-based refresh)
-					if (window.refreshEnabled) {
-						location.reload();
-					}
-				}, window.refreshAmount * 1000); // wait 1 minute
-				
-			} else {
-				// Too early for the session so refreshing in 1 minute
-				console.log("It's too early to book. Refreshing in 1 minute...");
-				clearInterval(refreshTimer);
-				refreshTimer = setInterval(function() {
-					// Reload page periodically if it's necessary (time-based refresh)
-					if (window.refreshEnabled) {
-						location.reload();
-					}
-				}, 60000); // wait 1 minute
-			}
-		}
-	}
+    chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+        if (request && request.status === 'refreshEnabled') {
+            // Add logic here if needed
+        }
+    });
 
-	function onPageLoad(e) {
-		chrome.storage.sync.get(['refreshEnabled', 'refreshAmount', 'smsEnabled', 'smsNumber', 'addToBasketEnabled'], function(values) {
-			// Store values to the window object for easy access
-			window.refreshEnabled = values.refreshEnabled;
-			window.refreshAmount = values.refreshAmount;
-			window.smsEnabled = values.smsEnabled;
-			window.smsNumber = values.smsNumber;
-			window.addToBasketEnabled = values.addToBasketEnabled;
-
-			var url = window.location.href;
-
-			// Start refreshing if necessary and on the correct page
-			if (window.refreshEnabled && url.indexOf('?' + 'load_event_id' + '=') !== -1) {
-				beginRefresh();
-			} else {
-				// Update clickable classes only once
-				$('.class:not(.class_available)').each(function(i, obj) {
-					var classId = $(this).attr('id');
-					$(this).attr("onclick", "window.open('https://coney-island-ymca.virtuagym.com/classes?load_event_id=" + classId + "', '_blank');");
-				});
-			}
-		});
-	}
-
-	document.addEventListener('DOMContentLoaded', function(e) {
-		onPageLoad(e);
-
-		// Observe changes to only relevant parts of the page
-		const targetNode = $('body')[0];
-		const config = { attributes: false, childList: true, subtree: false };
-
-		// Create an observer instance and observe only when necessary
-		const observer = new MutationObserver(onPageLoad);
-		observer.observe(targetNode, config);
-	});
-
-	// Function to manage the storage changes efficiently
-	chrome.storage.onChanged.addListener(function(changes, namespace) {
-		for (let key in changes) {
-			if (key === "smsEnabled") {
-				window.smsEnabled = changes[key].newValue;
-			}
-			if (key === "smsNumber") {
-				window.smsNumber = changes[key].newValue;
-			}
-			if (key === "addToBasketEnabled") {
-				window.addToBasketEnabled = changes[key].newValue;
-			}
-			if (key === "refreshAmount") {
-				window.refreshAmount = changes[key].newValue;
-			}
-			if (key === "refreshEnabled") {
-				window.refreshEnabled = changes[key].newValue;
-				if (window.refreshEnabled) {
-					beginRefresh();
-				}
-			}
-		}
-	});
-
-	chrome.runtime.onMessage.addListener(
-		function(request, sender, sendResponse) {
-			if (request) {
-				switch (request.status) {
-					case 'refreshEnabled':
-						// Handle status update if needed
-						break;
-				}
-			}
-		}
-	);
 })();
