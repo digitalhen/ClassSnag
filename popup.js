@@ -1,50 +1,89 @@
-function saveChanges(e) {
-  let refreshEnabled = document.getElementById('refreshEnabled').checked;
-  let refreshAmount = document.getElementById('refreshAmount').value;
+'use strict';
 
-  let smsEnabled = document.getElementById('smsEnabled').checked;
-  let smsNumber = document.getElementById('smsNumber').value;
-  let addToBasketEnabled = document.getElementById('addToBasketEnabled').checked;
+const STORAGE_KEYS = {
+  REFRESH_ENABLED: 'refreshEnabled',
+  REFRESH_AMOUNT: 'refreshAmount',
+  ADD_TO_BASKET_ENABLED: 'addToBasketEnabled'
+};
 
+const DEFAULT_VALUES = {
+  [STORAGE_KEYS.REFRESH_ENABLED]: false,
+  [STORAGE_KEYS.REFRESH_AMOUNT]: 30,
+  [STORAGE_KEYS.ADD_TO_BASKET_ENABLED]: false
+};
 
-  
-  // Update UI
-  document.getElementById('refreshAmountText').innerText = refreshAmount;
-
-  // Save settings
-  chrome.storage.sync.set({'refreshEnabled': refreshEnabled, 'refreshAmount': refreshAmount, 'smsEnabled': smsEnabled, 'smsNumber': smsNumber, 'addToBasketEnabled': addToBasketEnabled}, function() {
-    //message('Settings saved');
-  });
-
-  // let the main content.js know that we've saved settings
-  //sendMessage('refreshEnabled');
-}
-
-function sendMessage(message) {
-  chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
-    chrome.tabs.sendMessage(tabs[0].id, { status: message }, response => {});
+function saveSettings(settings) {
+  chrome.storage.sync.set(settings, () => {
+    if (chrome.runtime.lastError) {
+      console.error('Error saving settings:', chrome.runtime.lastError);
+    }
   });
 }
 
-document.addEventListener('DOMContentLoaded', function () {
-  let refreshEnabled = document.getElementById('refreshEnabled');
-  let refreshAmount = document.getElementById('refreshAmount');
-  let smsEnabled = document.getElementById('smsEnabled');
-  let smsNumber = document.getElementById('smsNumber');
-  let addToBasketEnabled = document.getElementById('addToBasketEnabled');
+function updateRefreshAmountDisplay(value) {
+  const displayElement = document.getElementById('refreshAmountText');
+  if (displayElement) {
+    displayElement.textContent = value;
+  }
+}
 
-  refreshEnabled.addEventListener("click", saveChanges, false);
-  refreshAmount.addEventListener("input", saveChanges, false);
-  smsEnabled.addEventListener("click", saveChanges, false);
-  smsNumber.addEventListener("input", saveChanges, false);
-  addToBasketEnabled.addEventListener("click", saveChanges, false);
+function handleRefreshEnabledChange(event) {
+  saveSettings({ [STORAGE_KEYS.REFRESH_ENABLED]: event.target.checked });
+}
 
-  chrome.storage.sync.get(['refreshEnabled', 'refreshAmount', 'smsEnabled', 'smsNumber', 'addToBasketEnabled'], function(values){
-    refreshEnabled.checked = values.refreshEnabled;
-    refreshAmount.value = values.refreshAmount || 30;
-    refreshAmountText.innerText = values.refreshAmount || 30;
-    smsEnabled.checked = values.smsEnabled;
-    smsNumber.value = values.smsNumber;
-    addToBasketEnabled.checked = values.addToBasketEnabled;
+function handleRefreshAmountChange(event) {
+  const value = event.target.value;
+  updateRefreshAmountDisplay(value);
+  saveSettings({ [STORAGE_KEYS.REFRESH_AMOUNT]: parseInt(value, 10) });
+}
+
+function handleAddToBasketEnabledChange(event) {
+  saveSettings({ [STORAGE_KEYS.ADD_TO_BASKET_ENABLED]: event.target.checked });
+}
+
+function loadSettings() {
+  const keys = Object.values(STORAGE_KEYS);
+
+  chrome.storage.sync.get(keys, (values) => {
+    const refreshEnabled = document.getElementById('refreshEnabled');
+    const refreshAmount = document.getElementById('refreshAmount');
+    const addToBasketEnabled = document.getElementById('addToBasketEnabled');
+
+    if (refreshEnabled) {
+      refreshEnabled.checked = values[STORAGE_KEYS.REFRESH_ENABLED] ?? DEFAULT_VALUES[STORAGE_KEYS.REFRESH_ENABLED];
+    }
+
+    if (refreshAmount) {
+      const amount = values[STORAGE_KEYS.REFRESH_AMOUNT] ?? DEFAULT_VALUES[STORAGE_KEYS.REFRESH_AMOUNT];
+      refreshAmount.value = amount;
+      updateRefreshAmountDisplay(amount);
+    }
+
+    if (addToBasketEnabled) {
+      addToBasketEnabled.checked = values[STORAGE_KEYS.ADD_TO_BASKET_ENABLED] ?? DEFAULT_VALUES[STORAGE_KEYS.ADD_TO_BASKET_ENABLED];
+    }
   });
+}
+
+function initializeEventListeners() {
+  const refreshEnabled = document.getElementById('refreshEnabled');
+  const refreshAmount = document.getElementById('refreshAmount');
+  const addToBasketEnabled = document.getElementById('addToBasketEnabled');
+
+  if (refreshEnabled) {
+    refreshEnabled.addEventListener('change', handleRefreshEnabledChange);
+  }
+
+  if (refreshAmount) {
+    refreshAmount.addEventListener('input', handleRefreshAmountChange);
+  }
+
+  if (addToBasketEnabled) {
+    addToBasketEnabled.addEventListener('change', handleAddToBasketEnabledChange);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  initializeEventListeners();
+  loadSettings();
 });

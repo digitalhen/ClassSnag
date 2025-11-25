@@ -1,7 +1,7 @@
 {
-  "name": "YMCABot",
-  "description": "This extension will automatically book classes at the YMCA as soon as they become available.",
-  "version": "0.0.0.7",
+  "name": "ClassSnag",
+  "description": "Automatically book fitness classes on VirtuGym as soon as they become available. Never miss your favorite class again!",
+  "version": "1.0.0",
   "icons": {
     "16": "assets/icon-16.png",
     "48": "assets/icon-48.png",
@@ -9,18 +9,19 @@
   },
   "permissions": [
     "activeTab",
-    "storage",
-    "tabs",
-    "*://*/*"
+    "storage"
   ],
-  "browser_action": {
-    "default_title": "YMCABot",
+  "host_permissions": [
+    "https://*.virtuagym.com/*"
+  ],
+  "action": {
+    "default_title": "ClassSnag - Auto-book fitness classes",
     "default_icon": "assets/icon-128.png",
     "default_popup": "popup.html"
   },
   "content_scripts": [
     {
-      "matches": [ "https://coney-island-ymca.virtuagym.com/classes*" ],
+      "matches": [ "https://*.virtuagym.com/classes*" ],
       "js": [
         "jquery.min.js",
         "content.js"
@@ -31,6 +32,11 @@
       "run_at": "document_start"
     }
   ],
-  "web_accessible_resources": [ "assets/mask.png"],
-  "manifest_version": 2
+  "web_accessible_resources": [
+    {
+      "resources": [ "assets/mask.png" ],
+      "matches": [ "https://*.virtuagym.com/*" ]
+    }
+  ],
+  "manifest_version": 3
 }

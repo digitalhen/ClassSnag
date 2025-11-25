@@ -1,34 +1,50 @@
 <!doctype html>
 <html>
   <head>
-    <title>WalBot</title>
+    <title>ClassSnag</title>
     <script type="text/javascript" src="popup.js"></script>
-    <style>
-	    button {
-	    	padding: 5%;
-	    	margin: 5px;
-	    	width: 90%;
-	    }
-	    label {
-	    	margin: 10px 5px;
-	    }
-    </style>
+    <link rel="stylesheet" href="styles.css">
   </head>
   <body>
-    <h1>YMCABot</h1>
+    <div class="container">
+      <div class="header">
+        <h1>ClassSnag</h1>
+        <p class="tagline">Never miss your favorite class</p>
+      </div>
 
-    <label>Refresh: <input id="refreshEnabled" type="checkbox" /></label>
-    <br>
-    <label>Every (<span id="refreshAmountText">30</span>) second</label>
-    <input id="refreshAmount" type="range" min="1" max="60" value="30">
+      <div class="setting-group">
+        <div class="setting-header">
+          <label class="toggle-label">
+            <input id="refreshEnabled" type="checkbox" class="toggle-input" />
+            <span class="toggle-slider"></span>
+            <span class="label-text">Auto Refresh</span>
+          </label>
+        </div>
+        <div class="setting-detail">
+          <label class="range-label">
+            Refresh every <span id="refreshAmountText" class="highlight">30</span> seconds
+            <input id="refreshAmount" type="range" min="1" max="60" value="30" class="range-input">
+          </label>
+          <p class="description">Keep checking for spots when class is full or not yet open</p>
+        </div>
+      </div>
 
-    <br>
-    <br>
-    <label>SMS: <input id="smsEnabled" type="checkbox" /></label>
-    <br>
-    <label>Number: <input id="smsNumber" type="number" name="smsNumber" /></label>
-    <br>
-    <br>
-    <label>Reserve class: <input id="addToBasketEnabled" type="checkbox" /></label>
+      <div class="setting-group">
+        <div class="setting-header">
+          <label class="toggle-label">
+            <input id="addToBasketEnabled" type="checkbox" class="toggle-input" />
+            <span class="toggle-slider"></span>
+            <span class="label-text">Auto Book</span>
+          </label>
+        </div>
+        <div class="setting-detail">
+          <p class="description">Instantly book when a spot opens (booking launch or cancellation)</p>
+        </div>
+      </div>
+
+      <div class="info-section">
+        <p class="info-text">Navigate to any VirtuGym class page to start</p>
+      </div>
+    </div>
   </body>
 </html>
