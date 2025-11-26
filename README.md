@@ -2,13 +2,13 @@
 
 **Never miss your favorite fitness class again!**
 
-ClassSnag is a Chrome extension that automatically monitors and books fitness classes on VirtuGym-powered booking systems. Whether it's yoga, spin, CrossFit, or any other class, ClassSnag helps you snag that spot before it fills up.
+ClassSnag is a Chrome extension that automatically monitors and books fitness classes on VirtuaGym-powered booking systems. Whether it's yoga, spin, CrossFit, or any other class, ClassSnag helps you snag that spot before it fills up.
 
 ## ✨ Features
 
 - **🔄 Auto Refresh** - Continuously monitor class availability when classes are full or not yet open for booking
 - **⚡ Instant Booking** - Automatically click the "Book" button the moment a spot opens (either when booking launches or someone cancels)
-- **🌐 Universal Support** - Works with any gym or fitness center that uses VirtuGym (*.virtuagym.com)
+- **🌐 Universal Support** - Works with any gym or fitness center that uses VirtuaGym (*.virtuagym.com)
 - **⚙️ Customizable** - Set your own refresh interval from 1-60 seconds
 - **💾 Persistent Settings** - Your preferences sync across all your Chrome devices
 - **🎨 Modern UI** - Clean, intuitive interface with toggle switches and sliders
@@ -26,8 +26,8 @@ ClassSnag is a Chrome extension that automatically monitors and books fitness cl
 
 ## 📖 How to Use
 
-1. **Navigate to a VirtuGym class page**
-   - Go to your gym's VirtuGym booking site (e.g., `https://your-gym.virtuagym.com/classes`)
+1. **Navigate to a VirtuaGym class page**
+   - Go to your gym's VirtuaGym booking site (e.g., `https://your-gym.virtuagym.com/classes`)
    - Click on any class to view its details
 
 2. **Configure ClassSnag**
@@ -62,7 +62,7 @@ ClassSnag is a Chrome extension that automatically monitors and books fitness cl
 ## 🔒 Privacy & Permissions
 
 ClassSnag requires minimal permissions:
-- **activeTab** - To interact with VirtuGym class pages
+- **activeTab** - To interact with VirtuaGym class pages
 - **storage** - To save your preferences
 - **host_permissions** - Access to `*.virtuagym.com` domains only
 
@@ -77,7 +77,7 @@ All processing happens locally in your browser.
 ## 🛠️ Technical Details
 
 - **Manifest Version**: 3 (latest Chrome extension standard)
-- **Supported Sites**: All VirtuGym-powered booking systems
+- **Supported Sites**: All VirtuaGym-powered booking systems
 - **Browser**: Chrome (and Chromium-based browsers)
 - **Detection Method**: MutationObserver with polling fallback for reliability
 
@@ -95,7 +95,7 @@ This project is provided as-is for personal use.
 
 ## ⚠️ Disclaimer
 
-ClassSnag is an unofficial tool and is not affiliated with or endorsed by VirtuGym. Use responsibly and in accordance with your gym's terms of service. Automated booking may be against some gyms' policies - check with your facility before use.
+ClassSnag is an unofficial tool and is not affiliated with or endorsed by VirtuaGym. Use responsibly and in accordance with your gym's terms of service. Automated booking may be against some gyms' policies - check with your facility before use.
 
 ---
 

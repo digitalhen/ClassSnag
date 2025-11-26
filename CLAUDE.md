@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-ClassSnag is a Chrome browser extension that automatically books fitness classes on any VirtuGym-powered booking system as soon as they become available. The extension monitors class availability and can automatically refresh the page, click booking buttons, and reserve spots. It works with any gym or fitness center that uses VirtuGym (*.virtuagym.com).
+ClassSnag is a Chrome browser extension that automatically books fitness classes on any VirtuaGym-powered booking system as soon as they become available. The extension monitors class availability and can automatically refresh the page, click booking buttons, and reserve spots. It works with any gym or fitness center that uses VirtuaGym (*.virtuagym.com).
 
 ## Architecture
 
@@ -21,7 +21,7 @@ This is a simple Chrome Manifest V3 extension with three main components:
    - Uses constants for storage keys to prevent typos
    - Implements proper error handling for storage operations
 
-2. **content.js** - Content script injected into VirtuGym class pages:
+2. **content.js** - Content script injected into VirtuaGym class pages:
    - Monitors for booking buttons and class availability status
    - Implements automatic page refresh when classes are "Fully booked" or "Too early to book"
    - Automatically clicks the booking button when `addToBasketEnabled` is true
@@ -35,7 +35,7 @@ This is a simple Chrome Manifest V3 extension with three main components:
    - Content scripts run at `document_start` for early DOM manipulation
    - Uses jQuery for DOM manipulation
    - Permissions: `activeTab`, `storage`
-   - Host permissions: `https://*.virtuagym.com/*` (works with any VirtuGym site)
+   - Host permissions: `https://*.virtuagym.com/*` (works with any VirtuaGym site)
 
 ### Key Data Flow
 
@@ -82,7 +82,7 @@ The codebase follows modern JavaScript conventions:
 ## Important Constraints
 
 - jQuery dependency included (jquery.min.js)
-- Only works with VirtuGym-powered booking systems
+- Only works with VirtuaGym-powered booking systems
 - Uses `chrome.storage.sync` which syncs settings across devices
 - Requires Chrome or Chromium-based browser
 
@@ -91,4 +91,4 @@ The codebase follows modern JavaScript conventions:
 - **Name**: ClassSnag
 - **Tagline**: "Never miss your favorite class"
 - **Color Scheme**: Purple gradient (primary: #667eea, secondary: #764ba2)
-- **Target Audience**: Fitness enthusiasts using VirtuGym booking systems
+- **Target Audience**: Fitness enthusiasts using VirtuaGym booking systems
