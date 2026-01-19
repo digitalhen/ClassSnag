@@ -197,12 +197,23 @@
         }
     }
 
+    function openClassInGroupedTab(url) {
+        chrome.runtime.sendMessage({ action: 'openTabInGroup', url });
+    }
+
     function setupClassLinks() {
         $('.class:not(.class_available)').each(function () {
             const classId = $(this).attr('id');
             const currentOrigin = window.location.origin;
             const baseUrl = `${currentOrigin}/classes`;
-            $(this).attr('onclick', `window.open('${baseUrl}?load_event_id=${classId}', '_blank');`);
+            const classUrl = `${baseUrl}?load_event_id=${classId}`;
+
+            $(this).css('cursor', 'pointer');
+            $(this).off('click').on('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                openClassInGroupedTab(classUrl);
+            });
         });
     }
 
