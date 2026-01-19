@@ -17,6 +17,21 @@
         TOO_LATE: 'Too late to book'
     };
 
+    const ERROR_INDICATORS = [
+        'redis',
+        'rate limit',
+        'too many requests',
+        'server error',
+        '500',
+        '502',
+        '503',
+        '504',
+        'temporarily unavailable',
+        'try again later'
+    ];
+
+    const ERROR_RETRY_DELAY = 10000; // 10 seconds
+
     let state = {
         refreshEnabled: false,
         refreshAmount: 30,
@@ -29,6 +44,30 @@
             clearInterval(state.refreshTimer);
             state.refreshTimer = null;
         }
+    }
+
+    function checkForErrorPage() {
+        const pageText = document.body ? document.body.innerText.toLowerCase() : '';
+        const pageTitle = document.title.toLowerCase();
+        const combinedText = pageText + ' ' + pageTitle;
+
+        for (const indicator of ERROR_INDICATORS) {
+            if (combinedText.includes(indicator.toLowerCase())) {
+                return indicator;
+            }
+        }
+        return null;
+    }
+
+    function handleErrorPage(errorType) {
+        console.log(`⚠️ Server error detected (${errorType}) - retrying in 10 seconds...`);
+        clearRefreshTimer();
+        state.refreshTimer = setTimeout(() => {
+            if (state.refreshEnabled) {
+                console.log('Retrying after error...');
+                location.reload();
+            }
+        }, ERROR_RETRY_DELAY);
     }
 
     function startRefreshTimer() {
@@ -113,14 +152,30 @@
 
     function waitForBookingButtons() {
         const FALLBACK_INTERVAL = 1000;
+        const MAX_WAIT_TIME = 5000; // Max time to wait for buttons before checking for errors
         const BUTTON_SELECTOR = '.event-actions button';
         const TARGET_SELECTOR = '.event-actions';
+
+        let waitTime = 0;
 
         const fallbackTimer = setInterval(() => {
             if ($(BUTTON_SELECTOR).length) {
                 clearInterval(fallbackTimer);
                 console.log('Buttons loaded (fallback)');
                 checkBookingStatus();
+                return;
+            }
+
+            waitTime += FALLBACK_INTERVAL;
+
+            // After waiting long enough, check if this is an error page
+            if (waitTime >= MAX_WAIT_TIME) {
+                const errorType = checkForErrorPage();
+                if (errorType) {
+                    clearInterval(fallbackTimer);
+                    handleErrorPage(errorType);
+                    return;
+                }
             }
         }, FALLBACK_INTERVAL);
 
@@ -163,6 +218,12 @@
             const isEventPage = url.includes('?load_event_id=');
 
             if (state.refreshEnabled && isEventPage) {
+                // Check for error page immediately
+                const errorType = checkForErrorPage();
+                if (errorType) {
+                    handleErrorPage(errorType);
+                    return;
+                }
                 waitForBookingButtons();
             } else {
                 setupClassLinks();
