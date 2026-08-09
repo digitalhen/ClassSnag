@@ -11,7 +11,10 @@
     "activeTab",
     "storage",
     "tabs",
-    "tabGroups"
+    "tabGroups",
+    "notifications",
+    "alarms",
+    "declarativeNetRequest"
   ],
   "background": {
     "service_worker": "background.js"
@@ -34,12 +37,22 @@
       "css": [
         "styles.css"
       ],
-      "run_at": "document_start"
+      "run_at": "document_start",
+      "all_frames": true
     }
   ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "strip_frame_headers",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  },
   "web_accessible_resources": [
     {
-      "resources": [ "assets/mask.png" ],
+      "resources": [ "assets/mask.png", "assets/bell.wav" ],
       "matches": [ "https://*.virtuagym.com/*" ]
     }
   ],

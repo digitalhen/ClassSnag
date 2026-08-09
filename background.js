@@ -2,8 +2,45 @@
 
 const TAB_GROUP_NAME = 'YMCA';
 const TAB_GROUP_COLOR = 'yellow';
+const KEEPALIVE_ALARM = 'classsnag-keepalive';
+const KEEPALIVE_INTERVAL_MINUTES = 1;
 
-let ymcaGroupId = null;
+// Set up periodic keepalive alarm to prevent service worker death
+// and act as a fallback for throttled content script timers
+chrome.alarms.create(KEEPALIVE_ALARM, { periodInMinutes: KEEPALIVE_INTERVAL_MINUTES });
+
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+    if (alarm.name !== KEEPALIVE_ALARM) return;
+
+    // Ping all VirtuaGym tabs to check their content scripts are alive
+    try {
+        const tabs = await chrome.tabs.query({ url: 'https://*.virtuagym.com/classes*' });
+        for (const tab of tabs) {
+            try {
+                const response = await chrome.tabs.sendMessage(tab.id, { action: 'keepalive' });
+                if (response && response.refreshEnabled && response.isEventPage && !response.hasTimer) {
+                    // Content script is alive but lost its timer — force refresh
+                    console.log(`Keepalive: tab ${tab.id} lost timer, forcing refresh`);
+                    await chrome.tabs.sendMessage(tab.id, { action: 'forceRefresh' });
+                }
+            } catch {
+                // Content script not loaded or tab not ready — ignore
+            }
+        }
+    } catch {
+        // tabs.query failed — ignore
+    }
+});
+
+function showBookingNotification(className) {
+    chrome.notifications.create({
+        type: 'basic',
+        iconUrl: 'assets/icon-128.png',
+        title: 'Class Snagged!',
+        message: className || 'Your class has been booked successfully!',
+        priority: 2
+    });
+}
 
 async function findOrCreateGroup(windowId) {
     // Try to find an existing "ymca" group in this window
@@ -15,8 +52,9 @@ async function findOrCreateGroup(windowId) {
 }
 
 async function openTabInGroup(url, sourceTabId) {
-    // Create the new tab
-    const tab = await chrome.tabs.create({ url, active: true });
+    // Wrap class event pages in the monitor frame so the status bar persists across refreshes
+    const monitorUrl = chrome.runtime.getURL(`monitor.html?url=${encodeURIComponent(url)}`);
+    const tab = await chrome.tabs.create({ url: monitorUrl, active: true });
 
     // Find or create the YMCA group
     let groupId = await findOrCreateGroup(tab.windowId);
@@ -48,6 +86,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         openTabInGroup(message.url, sourceTabId)
             .then(tab => sendResponse({ success: true, tabId: tab.id }))
             .catch(error => sendResponse({ success: false, error: error.message }));
-        return true; // Keep channel open for async response
+        return true;
+    }
+
+    if (message.action === 'classBooked') {
+        showBookingNotification(message.className);
+        sendResponse({ success: true });
     }
 });
