@@ -6,5 +6,4 @@ _metadata
 .env*
 .claude
 tests
-store/assets
 assets/logo-source.png

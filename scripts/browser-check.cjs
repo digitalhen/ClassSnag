@@ -38,12 +38,12 @@ const os = require('node:os');
 
         let loads = 0;
         const fixture = `<!doctype html><html><head><title>Fixture class</title></head><body>
-            <h1>Family Swim</h1><p>This synthetic class page exercises booking responses without making a real reservation.</p>
+            <style>body{margin:0;background:#f4f5f8;font-family:Arial,sans-serif;color:#242039;padding:90px 12%}h1{font-size:36px;margin:12px 0}p{color:#70677c;line-height:1.7}.event-actions{margin-top:30px}button{background:#7760ba;color:white;border:0;border-radius:24px;padding:16px 32px;font-size:16px}.sample{font-size:12px;letter-spacing:2px;color:#7760ba}.card{background:white;padding:44px;border-radius:18px;box-shadow:0 15px 60px #2420390a}</style><div class="card"><span class="sample">SAMPLE GYM · DEMONSTRATION</span><h1>Family Swim</h1><p>Wednesday · 6:05–7:00 PM<br>Main pool · 8 / 8 spots</p><p>This sample class demonstrates ClassSnag’s response when another member gets the last spot.</p>
             <div class="event-actions"><button id="book_btn">Book now</button></div>
             <script>document.querySelector('#book_btn').onclick = () => {
                 document.body.insertAdjacentHTML('beforeend', '<div class="bootbox modal bootbox-alert in" style="display:block"><div class="bootbox-body">Could not make a reservation for the class. Class is full.</div><button data-bb-handler="ok">OK</button></div>');
                 document.querySelector('[data-bb-handler="ok"]').onclick = () => document.querySelector('.bootbox').remove();
-            };</script></body></html>`;
+            };</script></div></body></html>`;
         await context.route('https://demo.virtuagym.com/**', route => {
             loads++;
             return route.fulfill({ contentType: 'text/html', body: fixture });
@@ -65,6 +65,8 @@ const os = require('node:os');
         assert.equal(await monitor.frameLocator('iframe').locator('.bootbox').count(), 0);
         assert.ok((await worker.evaluate(() => getMonitoredTabIds())).length >= 1, 'keepalive discovers monitor tabs without broad tabs permission');
         assert.match(await monitor.locator('#cs-dot').getAttribute('class'), /monitoring/);
+        fs.mkdirSync(path.join(root, 'store/assets'), { recursive: true });
+        await monitor.screenshot({ path: path.join(root, 'store/assets/monitor.png') });
         // Messages from the monitor page itself must not impersonate its class iframe.
         await monitor.evaluate(() => window.postMessage({ type: 'classsnag', action: 'statusUpdate', status: 'success', message: 'spoof' }, '*'));
         assert.notEqual(await monitor.locator('#cs-msg').textContent(), 'spoof');

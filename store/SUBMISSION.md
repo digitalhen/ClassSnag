@@ -4,7 +4,7 @@ Prepared locally; not submitted or published. Requires Chrome 116 or newer.
 
 1. Run `npm ci`, `npm test`, `npm run test:browser`, and `npm run package`.
 2. Load the unpacked folder in Chrome and verify the extension with a gym-approved test class. Confirm existing-session login works in the monitor, full-class failures recover, and successful reservations stop monitoring. Automated fixtures do not establish compatibility with every gym.
-3. Host `store/privacy.html` at a public HTTPS URL. Set the support contact in the listing, update the policy's contact paragraph, and verify both links while signed out.
+3. Public homepage and privacy policy are deployed at https://apps.cleartextlabs.com/classsnag/ and https://apps.cleartextlabs.com/classsnag/privacy.html. The listing and policy link to GitHub support. Verify these links again before submitting.
 4. Register/sign in to the Chrome Web Store developer account, complete publisher details and enable two-step verification.
 5. Upload `dist/classsnag-1.1.0.zip` as a new item (or update the existing item if this is already listed).
 6. Copy the listing, single purpose and permission explanations from `store/LISTING.md`. Review privacy declarations against the actual code and current dashboard wording.
