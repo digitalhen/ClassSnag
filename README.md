@@ -1,6 +1,6 @@
 # ClassSnag 🎯
 
-**Never miss your favorite fitness class again!**
+**Get another shot at your favorite fitness class.**
 
 ClassSnag is a Chrome extension that automatically monitors and books fitness classes on VirtuaGym-powered booking systems. Whether it's yoga, spin, CrossFit, or any other class, ClassSnag helps you snag that spot before it fills up.
 
@@ -40,7 +40,8 @@ ClassSnag is a Chrome extension that automatically monitors and books fitness cl
    - ClassSnag will monitor the page and automatically:
      - Refresh when the class is fully booked
      - Refresh when it's too early to book
-     - Click the booking button when enabled and a spot opens up
+     - Request a booking when enabled and a spot opens up
+     - Confirm success from the website; resume monitoring if another member gets the opening first
      - Stop monitoring if you've already booked or it's too late
 
 ## 🎯 Use Cases
@@ -61,18 +62,11 @@ ClassSnag is a Chrome extension that automatically monitors and books fitness cl
 
 ## 🔒 Privacy & Permissions
 
-ClassSnag requires minimal permissions:
-- **activeTab** - To interact with VirtuaGym class pages
-- **storage** - To save your preferences
-- **host_permissions** - Access to `*.virtuagym.com` domains only
+ClassSnag uses storage, tab groups, notifications, alarms, host access to VirtuaGym, and a narrowly scoped declarative network rule for its embedded monitor. It has no developer backend or analytics. Preferences use Chrome Sync; class information is processed in your browser, and normal page and booking requests go to your gym.
 
-ClassSnag does NOT:
-- Collect any personal data
-- Track your browsing history
-- Send data to external servers
-- Access your login credentials
+See [the privacy policy](store/privacy.html) and [permission explanations](store/LISTING.md).
 
-All processing happens locally in your browser.
+For two people, use the separate member accounts or family-booking flow supported by your gym. Two tabs in the same signed-in account do not create two distinct reservations automatically.
 
 ## 🛠️ Technical Details
 
@@ -100,3 +94,11 @@ ClassSnag is an unofficial tool and is not affiliated with or endorsed by Virtua
 ---
 
 **Made with ❤️ for fitness enthusiasts who are tired of missing their favorite classes**
+
+## Development and release
+
+Run `npm ci` then `npm test` for booking regression tests. Run `npx playwright install chromium` once, then `npm run test:browser` for an isolated Chromium extension smoke test and store-asset capture. No real gym account or live booking is used by the automated tests.
+
+Run `npm run package` to build an allowlisted ZIP under `dist/`. Store copy, privacy policy, assets and remaining publisher steps are in [store/SUBMISSION.md](store/SUBMISSION.md).
+
+Public website: https://apps.cleartextlabs.com/classsnag/ — see [deployment notes](docs/deployment.md). Local container work uses Docker Desktop; OrbStack is reserved for production.

@@ -1,20 +1,19 @@
 {
   "name": "ClassSnag",
-  "description": "Automatically book fitness classes on VirtuaGym as soon as they become available. Never miss your favorite class again!",
-  "version": "1.0.0",
+  "description": "Watch VirtuaGym classes for openings and automatically request a booking when a spot becomes available.",
+  "version": "1.1.0",
   "icons": {
     "16": "assets/icon-16.png",
     "48": "assets/icon-48.png",
-    "128": "assets/icon-128.png"
+    "128": "assets/icon-128.png",
+    "32": "assets/icon-32.png"
   },
   "permissions": [
-    "activeTab",
     "storage",
-    "tabs",
     "tabGroups",
     "notifications",
     "alarms",
-    "declarativeNetRequest"
+    "declarativeNetRequestWithHostAccess"
   ],
   "background": {
     "service_worker": "background.js"
@@ -24,37 +23,37 @@
   ],
   "action": {
     "default_title": "ClassSnag - Auto-book fitness classes",
-    "default_icon": "assets/icon-128.png",
+    "default_icon": {
+      "16": "assets/icon-16.png",
+      "48": "assets/icon-48.png",
+      "128": "assets/icon-128.png",
+      "32": "assets/icon-32.png"
+    },
     "default_popup": "popup.html"
   },
   "content_scripts": [
     {
-      "matches": [ "https://*.virtuagym.com/classes*" ],
+      "matches": [
+        "https://*.virtuagym.com/classes*"
+      ],
       "js": [
         "jquery.min.js",
         "content.js"
-      ],
-      "css": [
-        "styles.css"
       ],
       "run_at": "document_start",
       "all_frames": true
     }
   ],
-  "declarative_net_request": {
-    "rule_resources": [
-      {
-        "id": "strip_frame_headers",
-        "enabled": true,
-        "path": "rules.json"
-      }
-    ]
-  },
   "web_accessible_resources": [
     {
-      "resources": [ "assets/mask.png", "assets/bell.wav" ],
-      "matches": [ "https://*.virtuagym.com/*" ]
+      "resources": [
+        "assets/bell.wav"
+      ],
+      "matches": [
+        "https://*.virtuagym.com/*"
+      ]
     }
   ],
-  "manifest_version": 3
+  "manifest_version": 3,
+  "minimum_chrome_version": "116"
 }

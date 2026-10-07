@@ -30,12 +30,20 @@
         'try again later'
     ];
 
+    const BOOKING_RESULT_TIMEOUT = 15000; // Reload to verify if the site never responds
     const ERROR_RETRY_BASE = 10000; // 10 seconds initial
     const ERROR_RETRY_MAX = 300000; // 5 minutes max
     const JITTER_FACTOR = 0.2; // ±20% randomization
     const IN_MONITOR_FRAME = window !== window.top;
 
     let state = {
+        bookingPending: false,
+        bookingObserver: null,
+        bookingResultTimer: null,
+        bookingPollTimer: null,
+        buttonObserver: null,
+        buttonWaitTimer: null,
+        monitoringStopped: false,
         refreshEnabled: false,
         refreshAmount: 30,
         addToBasketEnabled: false,
@@ -435,7 +443,90 @@
         return null;
     }
 
+    function clearBookingWait() {
+        state.bookingPending = false;
+        if (state.bookingObserver) state.bookingObserver.disconnect();
+        clearTimeout(state.bookingResultTimer);
+        clearInterval(state.bookingPollTimer);
+        state.bookingObserver = null;
+        state.bookingResultTimer = null;
+        state.bookingPollTimer = null;
+    }
+
+    function clearButtonWait() {
+        if (state.buttonObserver) state.buttonObserver.disconnect();
+        clearInterval(state.buttonWaitTimer);
+        state.buttonObserver = null;
+        state.buttonWaitTimer = null;
+    }
+
+    function clearRefreshCountdown() {
+        state.nextRefreshAt = null;
+        postToMonitor('nextRefreshAt', { time: null });
+    }
+
+    function getFullClassDialog() {
+        return $('.bootbox-alert:visible').filter(function () {
+            return /could not make a reservation for the class\.\s*class is full\./i.test(
+                $(this).find('.bootbox-body').text().replace(/\s+/g, ' ').trim()
+            );
+        }).first();
+    }
+
+    function retryFullClass($dialog) {
+        clearBookingWait();
+        // The book button and capacity underneath the alert can still be stale.
+        // Wait for a fresh page before attempting another reservation.
+        updateStatusBar('monitoring', 'Class filled before booking — watching for another opening');
+        startRefreshTimer();
+        $dialog.find('[data-bb-handler="ok"]').first().click();
+    }
+
+    function waitForBookingResult($bookButton) {
+        clearRefreshTimer();
+        clearWatchdog();
+        clearRefreshCountdown();
+        state.bookingPending = true;
+        updateStatusBar('monitoring', 'Booking requested — waiting for confirmation');
+
+        const checkResult = () => {
+            if (!state.bookingPending || !state.refreshEnabled) return;
+            const $fullDialog = getFullClassDialog();
+            if ($fullDialog.length) {
+                retryFullClass($fullDialog);
+            } else if ($(`span:contains("${BOOKING_STATUS.ALREADY_BOOKED}")`).length) {
+                clearBookingWait();
+                state.monitoringStopped = true;
+                clearMonitoringState();
+                updateStatusBar('success', 'Booked! Reservation confirmed');
+                notifyBookingSuccess();
+            }
+        };
+
+        state.bookingObserver = new MutationObserver(checkResult);
+        state.bookingObserver.observe(document.body, {
+            childList: true, subtree: true, characterData: true, attributes: true
+        });
+        state.bookingPollTimer = setInterval(checkResult, 1000);
+        state.bookingResultTimer = setTimeout(() => {
+            checkResult();
+            if (!state.bookingPending) return;
+            clearBookingWait();
+            updateStatusBar('monitoring', 'Booking unconfirmed — refreshing to check reservation');
+            // Re-read the reservation state before deciding whether to book again.
+            doReload();
+        }, BOOKING_RESULT_TIMEOUT);
+        $bookButton.click();
+        checkResult();
+    }
+
     function checkBookingStatus() {
+        if (!state.refreshEnabled || state.bookingPending || state.monitoringStopped) return;
+        const $fullDialog = getFullClassDialog();
+        if ($fullDialog.length) {
+            retryFullClass($fullDialog);
+            return;
+        }
         const $bookButton = $(BOOKING_STATUS.BOOK_BUTTON);
         const $waitingListButton = $(BOOKING_STATUS.WAITING_LIST_BUTTON);
         const $blockedButton = $(BOOKING_STATUS.BLOCKED_BUTTON_CLASS);
@@ -456,18 +547,16 @@
         const capacityInfo = capacity ? ` (${capacity} spots)` : '';
 
         // Priority 1: Check if booking button is available and enabled
-        if (isBookButtonAvailable) {
+        if (isBookButtonAvailable && !hasAlreadyBooked) {
             if (state.addToBasketEnabled) {
                 console.log(`✓ Booking available${capacityInfo} - clicking automatically!`);
-                clearRefreshTimer();
-                clearWatchdog();
-                updateStatusBar('success', `Booked!${capacityInfo}`);
-                $bookButton.click();
-                notifyBookingSuccess();
+                waitForBookingResult($bookButton);
             } else {
                 console.log(`✓ Booking available${capacityInfo} - auto-book is disabled`);
                 clearRefreshTimer();
                 clearWatchdog();
+                state.monitoringStopped = true;
+                clearRefreshCountdown();
                 updateStatusBar('success', `Spot available!${capacityInfo} — auto-book is off`);
             }
         }
@@ -476,6 +565,8 @@
             console.log('✓ Class already booked - stopping monitoring');
             clearRefreshTimer();
             clearWatchdog();
+            state.monitoringStopped = true;
+            clearRefreshCountdown();
             updateStatusBar('success', 'Class already booked');
             clearMonitoringState();
         }
@@ -496,6 +587,8 @@
             console.log('⛔ Too late to book - stopping monitoring');
             clearRefreshTimer();
             clearWatchdog();
+            state.monitoringStopped = true;
+            clearRefreshCountdown();
             updateStatusBar('stopped', 'Too late to book');
             clearMonitoringState();
         }
@@ -507,6 +600,7 @@
     }
 
     function waitForBookingButtons() {
+        clearButtonWait();
         const FALLBACK_INTERVAL = 1000;
         const MAX_WAIT_TIME = 5000; // Max time to wait for buttons before checking for errors
         const BUTTON_SELECTOR = '.event-actions button';
@@ -514,9 +608,9 @@
 
         let waitTime = 0;
 
-        const fallbackTimer = setInterval(() => {
+        state.buttonWaitTimer = setInterval(() => {
             if ($(BUTTON_SELECTOR).length) {
-                clearInterval(fallbackTimer);
+                clearButtonWait();
                 console.log('Buttons loaded (fallback)');
                 checkBookingStatus();
                 return;
@@ -528,7 +622,7 @@
             if (waitTime >= MAX_WAIT_TIME) {
                 const errorType = checkForErrorPage();
                 if (errorType) {
-                    clearInterval(fallbackTimer);
+                    clearButtonWait();
                     handleErrorPage(errorType);
                     return;
                 }
@@ -537,11 +631,11 @@
 
         const targetNode = document.querySelector(TARGET_SELECTOR);
         if (targetNode) {
-            const observer = new MutationObserver((mutationsList, obs) => {
+            state.buttonObserver = new MutationObserver((mutationsList, obs) => {
                 for (const mutation of mutationsList) {
                     if ($(mutation.target).find('button').length) {
                         console.log('Buttons loaded (observer)');
-                        clearInterval(fallbackTimer);
+                        clearButtonWait();
                         obs.disconnect();
                         checkBookingStatus();
                         break;
@@ -549,7 +643,7 @@
                 }
             });
 
-            observer.observe(targetNode, { childList: true, subtree: true });
+            state.buttonObserver.observe(targetNode, { childList: true, subtree: true });
         }
     }
 
@@ -618,12 +712,16 @@
                 case STORAGE_KEYS.REFRESH_ENABLED:
                     state.refreshEnabled = newValue;
                     if (newValue) {
+                        state.monitoringStopped = false;
                         state.errorRetryCount = 0;
                         startMonitoringSession();
                         createStatusBar();
                         updateStatusBar('monitoring', 'Starting up...');
                         waitForBookingButtons();
                     } else {
+                        clearBookingWait();
+                        clearButtonWait();
+                        clearRefreshCountdown();
                         clearRefreshTimer();
                         clearWatchdog();
                         clearMonitoringState();
@@ -652,19 +750,21 @@
             sendResponse({
                 alive: true,
                 refreshEnabled: state.refreshEnabled,
-                hasTimer: !!state.refreshTimer,
+                hasTimer: !!state.refreshTimer || state.bookingPending || state.monitoringStopped,
                 isEventPage
             });
 
             // If refresh should be running but timer is dead, restart it
-            if (state.refreshEnabled && isEventPage && !state.refreshTimer) {
+            if (state.refreshEnabled && isEventPage && !state.refreshTimer &&
+                !state.bookingPending && !state.monitoringStopped) {
                 console.log('🔧 Keepalive: restarting missing refresh timer');
                 scheduleRefresh();
                 startWatchdog();
             }
         }
 
-        if (message.action === 'forceRefresh' && state.refreshEnabled) {
+        if (message.action === 'forceRefresh' && state.refreshEnabled &&
+            !state.bookingPending && !state.monitoringStopped) {
             console.log('🔧 Background forced refresh');
             doReload();
         }

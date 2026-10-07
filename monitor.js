@@ -15,7 +15,13 @@ let tabFlashTimer = null;
 
 function getTargetUrl() {
     const params = new URLSearchParams(window.location.search);
-    return params.get('url');
+    try {
+        const url = new URL(params.get('url'));
+        if (url.protocol !== 'https:' ||
+            !(url.hostname === 'virtuagym.com' || url.hostname.endsWith('.virtuagym.com')) ||
+            !(url.pathname === '/classes' || url.pathname.startsWith('/classes/'))) return null;
+        return url.href;
+    } catch { return null; }
 }
 
 function formatDuration(ms) {
@@ -82,6 +88,8 @@ function reloadFrame() {
 
 // Listen for messages from the content script in the iframe
 window.addEventListener('message', (event) => {
+    const targetUrl = getTargetUrl();
+    if (!targetUrl || event.source !== frame.contentWindow || event.origin !== new URL(targetUrl).origin) return;
     const data = event.data;
     if (!data || data.type !== 'classsnag') return;
 

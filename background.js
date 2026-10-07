@@ -1,9 +1,54 @@
 'use strict';
 
-const TAB_GROUP_NAME = 'YMCA';
+const TAB_GROUP_NAME = 'ClassSnag';
 const TAB_GROUP_COLOR = 'yellow';
 const KEEPALIVE_ALARM = 'classsnag-keepalive';
 const KEEPALIVE_INTERVAL_MINUTES = 1;
+
+// Only allow framing class pages initiated by this extension. Ordinary browsing
+// and unrelated VirtuaGym frames keep their original security headers.
+const frameRulesReady = chrome.declarativeNetRequest.updateDynamicRules({
+    removeRuleIds: [1],
+    addRules: [{
+        id: 1,
+        priority: 1,
+        action: {
+            type: 'modifyHeaders',
+            responseHeaders: [
+                { header: 'X-Frame-Options', operation: 'remove' },
+                { header: 'Content-Security-Policy', operation: 'remove' }
+            ]
+        },
+        condition: {
+            regexFilter: '^https://([a-zA-Z0-9-]+\\.)*virtuagym\\.com/classes([/?]|$)',
+            initiatorDomains: [chrome.runtime.id],
+            resourceTypes: ['sub_frame']
+        }
+    }]
+});
+frameRulesReady.catch(error => console.error('Could not configure class monitor:', error));
+
+function isClassUrl(value) {
+    try {
+        const url = new URL(value);
+        return url.protocol === 'https:' &&
+            (url.hostname === 'virtuagym.com' || url.hostname.endsWith('.virtuagym.com')) &&
+            (url.pathname === '/classes' || url.pathname.startsWith('/classes/'));
+    } catch { return false; }
+}
+
+async function getMonitoredTabIds() {
+    const [tabs, contexts] = await Promise.all([
+        chrome.tabs.query({ url: 'https://*.virtuagym.com/classes*' }),
+        chrome.runtime.getContexts({ contextTypes: ['TAB'] })
+    ]);
+    const monitorPrefix = chrome.runtime.getURL('monitor.html') + '?';
+    return [...new Set([
+        ...tabs.map(tab => tab.id),
+        ...contexts.filter(context => context.documentUrl?.startsWith(monitorPrefix))
+            .map(context => context.tabId)
+    ])].filter(id => id >= 0);
+}
 
 // Set up periodic keepalive alarm to prevent service worker death
 // and act as a fallback for throttled content script timers
@@ -14,14 +59,14 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 
     // Ping all VirtuaGym tabs to check their content scripts are alive
     try {
-        const tabs = await chrome.tabs.query({ url: 'https://*.virtuagym.com/classes*' });
-        for (const tab of tabs) {
+        const tabIds = await getMonitoredTabIds();
+        for (const tabId of tabIds) {
             try {
-                const response = await chrome.tabs.sendMessage(tab.id, { action: 'keepalive' });
+                const response = await chrome.tabs.sendMessage(tabId, { action: 'keepalive' });
                 if (response && response.refreshEnabled && response.isEventPage && !response.hasTimer) {
                     // Content script is alive but lost its timer — force refresh
-                    console.log(`Keepalive: tab ${tab.id} lost timer, forcing refresh`);
-                    await chrome.tabs.sendMessage(tab.id, { action: 'forceRefresh' });
+                    console.log(`Keepalive: tab ${tabId} lost timer, forcing refresh`);
+                    await chrome.tabs.sendMessage(tabId, { action: 'forceRefresh' });
                 }
             } catch {
                 // Content script not loaded or tab not ready — ignore
@@ -43,7 +88,7 @@ function showBookingNotification(className) {
 }
 
 async function findOrCreateGroup(windowId) {
-    // Try to find an existing "ymca" group in this window
+    // Try to find an existing ClassSnag group in this window
     const groups = await chrome.tabGroups.query({ windowId, title: TAB_GROUP_NAME });
     if (groups.length > 0) {
         return groups[0].id;
@@ -52,11 +97,13 @@ async function findOrCreateGroup(windowId) {
 }
 
 async function openTabInGroup(url, sourceTabId) {
+    if (!isClassUrl(url)) throw new Error('Unsupported class URL');
+    await frameRulesReady;
     // Wrap class event pages in the monitor frame so the status bar persists across refreshes
     const monitorUrl = chrome.runtime.getURL(`monitor.html?url=${encodeURIComponent(url)}`);
     const tab = await chrome.tabs.create({ url: monitorUrl, active: true });
 
-    // Find or create the YMCA group
+    // Find or create the ClassSnag group
     let groupId = await findOrCreateGroup(tab.windowId);
 
     // Collect tabs to group (new tab + source tab if provided)
