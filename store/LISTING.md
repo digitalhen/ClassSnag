@@ -4,7 +4,7 @@ Name: ClassSnag
 
 Short description (manifest): Watch VirtuaGym classes for openings and automatically request a booking when a spot becomes available.
 
-Suggested category: Workflow & Planning (select the closest available productivity category).
+Submitted category: Tools.
 Language: English.
 
 ## Detailed description

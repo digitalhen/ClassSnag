@@ -1,6 +1,16 @@
 # Submission checklist
 
-Prepared locally; not submitted or published. Requires Chrome 116 or newer.
+Submitted for Chrome Web Store review on October 7, 2026. Version 1.1.0; requires Chrome 116 or newer. Automatic publication after approval is enabled.
+
+- Item ID: `mimfkfiafbomfpkookjnfokpdkakclnm`
+- Dashboard: https://chrome.google.com/webstore/devconsole/5aa3f8c3-03e8-4f0d-8e69-9479691a7332/mimfkfiafbomfpkookjnfokpdkakclnm/edit/status
+- Distribution: public, free, all regions. Category: Tools. Language: English.
+- Uploaded: icon, 1280×800 screenshot, 440×280 promotional tile.
+- Privacy disclosures: website content and web history (class-page URLs), no remote extension code, all three limited-use certifications.
+- Reviewer setup instructions supplied; no gym test credentials supplied.
+- Automated tests passed. A gym-approved live reservation test remains unperformed.
+
+## Future submission checklist
 
 1. Run `npm ci`, `npm test`, `npm run test:browser`, and `npm run package`.
 2. Load the unpacked folder in Chrome and verify the extension with a gym-approved test class. Confirm existing-session login works in the monitor, full-class failures recover, and successful reservations stop monitoring. Automated fixtures do not establish compatibility with every gym.
