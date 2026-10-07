@@ -1,0 +1,17 @@
+{
+  "index.html": {
+    "path": "",
+    "title": "ClassSnag — VirtuaGym Class Booking Chrome Extension",
+    "description": "Watch full VirtuaGym classes for openings with ClassSnag. Auto-refresh, request a booking, and get notified after confirmation. Free Chrome extension preview."
+  },
+  "guide.html": {
+    "path": "guide.html",
+    "title": "Install ClassSnag in Chrome — Setup & Booking Guide",
+    "description": "Install the ClassSnag Chrome extension and set up VirtuaGym class monitoring, auto-refresh, and automatic booking requests. Includes troubleshooting and FAQs."
+  },
+  "privacy.html": {
+    "path": "privacy.html",
+    "title": "ClassSnag Privacy Policy — Browser Storage & Gym Requests",
+    "description": "Learn how ClassSnag processes VirtuaGym class details in your browser, stores settings, and sends booking requests. No developer backend, ads, or analytics."
+  }
+}
