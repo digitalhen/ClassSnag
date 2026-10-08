@@ -74,10 +74,10 @@ for filename, page in pages.items():
             'softwareRequirements': 'Google Chrome 116 or newer; an existing VirtuaGym gym account',
             'softwareVersion': manifest['version'],
             'downloadUrl': base + 'downloads/classsnag-' + manifest['version'] + '.zip',
-            'installUrl': base + 'guide.html',
+            'installUrl': 'https://chromewebstore.google.com/detail/classsnag/mimfkfiafbomfpkookjnfokpdkakclnm',
             'image': share_image, 'screenshot': base + 'assets/monitor.png',
             'publisher': {'@type': 'Organization', 'name': 'Cleartext Labs', 'url': 'https://cleartextlabs.com'},
-            'offers': {'@type': 'Offer', 'price': '0', 'priceCurrency': 'USD', 'url': base + 'guide.html'},
+            'offers': {'@type': 'Offer', 'price': '0', 'priceCurrency': 'USD', 'url': 'https://chromewebstore.google.com/detail/classsnag/mimfkfiafbomfpkookjnfokpdkakclnm'},
             'featureList': ['VirtuaGym class availability monitoring', 'Configurable automatic refresh', 'Optional automatic booking requests', 'Confirmed reservation notifications'],
         })
     else:

@@ -1,6 +1,8 @@
 # Submission checklist
 
-Submitted for Chrome Web Store review on October 7, 2026. Version 1.1.0; requires Chrome 116 or newer. Automatic publication after approval is enabled.
+Published in the Chrome Web Store; availability reported October 8, 2026. Version 1.1.0; requires Chrome 116 or newer.
+
+Store listing: https://chromewebstore.google.com/detail/classsnag/mimfkfiafbomfpkookjnfokpdkakclnm
 
 - Item ID: `mimfkfiafbomfpkookjnfokpdkakclnm`
 - Dashboard: https://chrome.google.com/webstore/devconsole/5aa3f8c3-03e8-4f0d-8e69-9479691a7332/mimfkfiafbomfpkookjnfokpdkakclnm/edit/status

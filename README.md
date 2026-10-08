@@ -1,5 +1,7 @@
 # ClassSnag 🎯
 
+[Install ClassSnag from the Chrome Web Store](https://chromewebstore.google.com/detail/classsnag/mimfkfiafbomfpkookjnfokpdkakclnm)
+
 **Get another shot at your favorite fitness class.**
 
 ClassSnag is a Chrome extension that automatically monitors and books fitness classes on VirtuaGym-powered booking systems. Whether it's yoga, spin, CrossFit, or any other class, ClassSnag helps you snag that spot before it fills up.
